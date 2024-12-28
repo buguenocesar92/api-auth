@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Usercontroller;
-
+use App\Http\Controllers\TenantRegistrationController;
 Route::group([
     //'middleware' => 'api',
     'prefix' => 'auth',
@@ -24,3 +24,6 @@ Route::group([
 ], function () {
     Route::post('/assign-admin', [UserController::class, 'assignAdmin']);
 });
+
+Route::post('/tenant/register-user', [TenantRegistrationController::class, 'registerUserInTenant'])
+    ->name('tenant.register-user');
