@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Usercontroller;
 
 Route::group([
     //'middleware' => 'api',
@@ -16,6 +17,10 @@ Route::group([
 });
 
 
-Route::get('/only-admins', function () {
-    return "Solo un admin ve esto.";
-})->middleware(['auth:api', 'role:admin']);
+// routes/api.php (o donde manejes tus rutas)
+
+Route::group([
+    'middleware' => ['auth:api', 'role:Super-Admin'], // o 'role:admin' si admin puede crear otro admin
+], function () {
+    Route::post('/assign-admin', [UserController::class, 'assignAdmin']);
+});
