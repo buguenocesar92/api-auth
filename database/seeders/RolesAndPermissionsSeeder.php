@@ -63,10 +63,17 @@ class RolesAndPermissionsSeeder extends Seeder
         $userAdmin->assignRole($roleAdmin);
 
         // -- Usuario con rol "Super-Admin"
-        $userSuperAdmin = User::factory()->create([
-            'name' => 'Example SuperAdmin',
-            'email' => 'superadmin@example.com',
-        ]);
-        $userSuperAdmin->assignRole($roleSuperAdmin);
+        $email = env('SUPER_ADMIN_EMAIL');
+        $password = env('SUPER_ADMIN_PASSWORD');
+
+        $userSuperAdmin = \App\Models\User::firstOrCreate(
+            ['email' => $email],
+            [
+                'name' => 'Super Admin',
+                'password' => bcrypt($password),
+            ]
+        );
+        $userSuperAdmin->assignRole('Super-Admin');
+
     }
 }
