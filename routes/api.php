@@ -14,3 +14,8 @@ Route::group([
     Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');
     Route::post('/me', [AuthController::class, 'me'])->name('me');
 });
+
+
+Route::get('/only-admins', function () {
+    return "Solo un admin ve esto.";
+})->middleware(['auth:api', 'role:admin']);
