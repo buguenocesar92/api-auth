@@ -33,6 +33,8 @@ class AuthController extends Controller
         $user->password = bcrypt(request()->password);
         $user->save();
 
+        $user->assignRole('user'); // Rol por defecto
+
         return response()->json($user, 201);
     }
 
