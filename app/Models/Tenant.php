@@ -2,20 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Multitenancy\Contracts\IsTenant;
+use Spatie\Multitenancy\Models\Tenant as BaseTenant;
 
-class Tenant extends Model
+class Tenant extends BaseTenant implements IsTenant
 {
-    use HasFactory;
+    protected $fillable = ['name', 'domain'];
 
-    protected $fillable = [
-        'name',
-        'domain',
-        'plan',
-    ];
-
-    // Relación con usuarios
+    // Opcional: Relación con usuarios
     public function users()
     {
         return $this->hasMany(User::class);
