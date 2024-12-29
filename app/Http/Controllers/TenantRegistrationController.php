@@ -5,54 +5,53 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Tenant;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Hash;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth; // o Tymon\JWTAuth\Facades\JWTAuth
 
 class TenantRegistrationController extends Controller
 {
-    /**
-     * Registra un nuevo usuario en el Tenant,
-     * asignando "Admin" si es el primero, o "User" en caso contrario.
-     */
-    public function registerUserInTenant(Request $request)
+    public function registerTenant(Request $request)
     {
-        // 1. Validar los campos
         $request->validate([
-            'tenant_id' => 'required|exists:tenants,id',
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'domain' => 'required|unique:tenants,domain',
+            'name' => 'required|unique:tenants,name',
+            // datos de usuario
+            'user_name' => 'required',
+            'user_email' => 'required|email|unique:users,email',
             'password' => 'required|confirmed|min:8',
         ]);
 
-        // 2. Buscar el Tenant
-        $tenant = Tenant::findOrFail($request->tenant_id);
+        // 1. Crear Tenant
+        $tenant = Tenant::create([
+            'name'   => $request->name,
+            'domain' => $request->domain,
+            // otros campos según config
+        ]);
 
-        // 3. Ver si el Tenant ya tiene usuarios
-        $hasUsers = $tenant->users()->exists();
-
-        // 4. Crear el nuevo usuario
+        // 2. Crear usuario admin
         $user = new User();
-        $user->name = $request->name;
-        $user->email = $request->email;
+        $user->name = $request->user_name;
+        $user->email = $request->user_email;
         $user->password = Hash::make($request->password);
-        $user->tenant_id = $tenant->id;
+        // Podrías guardar tenant_id si usas single DB.
+        // O si usas "database per tenant", en la migración de la base "landlord"
+        // no es necesario. Depende de tu approach.
         $user->save();
 
-        // 5. Asignar rol
-        if (! $hasUsers) {
-            // Si no hay usuarios previos, el primero será Admin
-            $user->assignRole('Admin');
-        } else {
-            // Siguientes serán rol User (o lo que desees)
-            $user->assignRole('User');
+        $user->assignRole('Admin'); // Asegúrate de haber creado este rol
+
+        // 3. Loguear con JWT
+        if (! $token = JWTAuth::fromUser($user)) {
+            return response()->json(['error' => 'Could not generate token'], 500);
         }
 
-        // 6. Retornar la respuesta
+        // Retornar info
         return response()->json([
-            'message' => 'Usuario registrado correctamente',
-            'tenant'  => $tenant->name,
-            'user'    => $user->only(['id', 'name', 'email']),
-            'role'    => $hasUsers ? 'User' : 'Admin'
+            'message' => 'Tenant registered successfully',
+            'tenant'  => $tenant,
+            'user'    => $user,
+            'token'   => $token,
         ], 201);
     }
 }
