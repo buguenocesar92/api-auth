@@ -31,6 +31,7 @@ class AuthController extends Controller
         $user->name = request()->name;
         $user->email = request()->email;
         $user->password = bcrypt(request()->password);
+        $user->tenant_id = auth()->user()->tenant_id;
         $user->save();
 
         $user->assignRole('User'); // Rol por defecto
