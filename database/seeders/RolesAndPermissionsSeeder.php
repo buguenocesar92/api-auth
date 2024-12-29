@@ -8,32 +8,31 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use App\Models\User;
 use App\Models\Tenant;
+use Spatie\Multitenancy\Contracts\IsTenant;
+use Illuminate\Support\Facades\Artisan;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
     /**
-     * Create the initial roles and permissions with a basic multi-tenant approach.
+     * Run the database seeds.
      */
     public function run(): void
     {
         // 1. Reset cached roles and permissions
-        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // 2. Crear permisos (globales, no atados a tenant)
-        Permission::create(['name' => 'view dashboard']);
-        Permission::create(['name' => 'create users']);
-        Permission::create(['name' => 'edit users']);
-        Permission::create(['name' => 'delete users']);
-        Permission::create(['name' => 'assign roles']);
-        // ...agrega otros si lo deseas
+        // 2. Crear permisos globales (no atados a tenant)
+        Permission::firstOrCreate(['name' => 'view dashboard']);
+        Permission::firstOrCreate(['name' => 'create users']);
+        Permission::firstOrCreate(['name' => 'edit users']);
+        Permission::firstOrCreate(['name' => 'delete users']);
+        Permission::firstOrCreate(['name' => 'assign roles']);
 
-        // 3. Crear roles (globales) y asignar permisos
-        // -- Rol "User" (rol básico, con permiso para ver el dashboard)
-        $roleUser = Role::create(['name' => 'User']);
+        // 3. Crear roles globales y asignar permisos
+        $roleUser = Role::firstOrCreate(['name' => 'User']);
         $roleUser->givePermissionTo('view dashboard');
 
-        // -- Rol "Admin"
-        $roleAdmin = Role::create(['name' => 'Admin']);
+        $roleAdmin = Role::firstOrCreate(['name' => 'Admin']);
         $roleAdmin->givePermissionTo([
             'view dashboard',
             'create users',
@@ -42,39 +41,114 @@ class RolesAndPermissionsSeeder extends Seeder
             'assign roles',
         ]);
 
-        // -- Rol "Super-Admin" (Gate::before en AuthServiceProvider)
-        $roleSuperAdmin = Role::create(['name' => 'Super-Admin']);
+        $roleSuperAdmin = Role::firstOrCreate(['name' => 'Super-Admin']);
 
-        /*
-         |--------------------------------------------------------------------------
-         | 4. Crear Tenant "Acme Inc." y Usuarios
-         |--------------------------------------------------------------------------
-         */
-        $tenantA = Tenant::firstOrCreate(
-            ['name' => 'Acme Inc.'],
+        // 4. Crear Tenants y Usuarios de Ejemplo
+        $this->createTenantWithUsers(
+            'Acme Inc.',
+            'acme.saas.local',
+            'Example Admin Acme',
+            'admin@acme.com',
+            'admin123',
+            'Example User Acme',
+            'user@acme.com',
+            'user123',
+            $roleAdmin,
+            $roleUser
+        );
+
+        $this->createTenantWithUsers(
+            'Beta Inc.',
+            'beta.saas.local',
+            'Example Admin Beta',
+            'admin@beta.com',
+            'admin123',
+            'Example User Beta',
+            'user@beta.com',
+            'user123',
+            $roleAdmin,
+            $roleUser
+        );
+
+        // Crear "Super-Admin" en la base de datos principal
+        $this->createSuperAdmin();
+    }
+
+    /**
+     * Crear un tenant y sus usuarios.
+     */
+    private function createTenantWithUsers(
+        string $tenantName,
+        string $domain,
+        string $adminName,
+        string $adminEmail,
+        string $adminPassword,
+        string $userName,
+        string $userEmail,
+        string $userPassword,
+        Role $roleAdmin,
+        Role $roleUser
+    ): void {
+        // Crear el tenant
+        $tenant = Tenant::firstOrCreate(
+            ['name' => $tenantName],
+            ['domain' => $domain]
+        );
+
+        // Establecer el tenant actual
+        $tenant->makeCurrent();
+
+        // Verifica que el tenant se registró correctamente
+        if (!app()->bound(\Spatie\Multitenancy\Contracts\IsTenant::class)) {
+            $this->command->error("Failed to bind tenant {$tenant->name} to the container.");
+            $tenant->forgetCurrent();
+            return;
+        }
+
+
+        //dd($tenant->id);
+
+        // Ejecutar migraciones específicas del tenant
+        //Artisan::call('migrate', ['--force' => true]);
+
+        // Crear el Admin del tenant y asociarlo con el tenant_id
+        $adminUser = User::firstOrCreate(
+            ['email' => $adminEmail],
             [
-                'domain' => 'acme.saas.local', // Opcional
-                'plan' => 'pro',              // Opcional
+                'name' => $adminName,
+                'password' => bcrypt($adminPassword),
+                'tenant_id' => $tenant->id, // Asociar el tenant_id
             ]
         );
 
-        // -- Usuario "User" en Acme
-        $userUser = User::factory()->create([
-            'name' => 'Example User',
-            'email' => 'user@example.com',
-            'tenant_id' => $tenantA->id,
-        ]);
-        $userUser->assignRole($roleUser);
+        //dd($tenant->id);
+        $adminUser->assignRole($roleAdmin);
 
-        // -- Usuario "Admin" en Acme
-        $userAdmin = User::factory()->create([
-            'name' => 'Example Admin',
-            'email' => 'admin@example.com',
-            'tenant_id' => $tenantA->id,
-        ]);
-        $userAdmin->assignRole($roleAdmin);
+        //dd($adminUser);
 
-        // -- "Super-Admin" (tomado de .env)
+        // Crear el User del tenant y asociarlo con el tenant_id
+        $normalUser = User::firstOrCreate(
+            ['email' => $userEmail],
+            [
+                'name' => $userName,
+                'password' => bcrypt($userPassword),
+                'tenant_id' => $tenant->id, // Asociar el tenant_id
+            ]
+        );
+        $normalUser->assignRole($roleUser);
+
+        //dd($normalUser);
+
+        // Olvidar el tenant actual
+        $tenant->forgetCurrent();
+
+    }
+
+    /**
+     * Crear el Super Admin en la base de datos principal.
+     */
+    private function createSuperAdmin(): void
+    {
         $email = env('SUPER_ADMIN_EMAIL', 'superadmin@example.com');
         $password = env('SUPER_ADMIN_PASSWORD', 'changeme123');
 
@@ -83,40 +157,8 @@ class RolesAndPermissionsSeeder extends Seeder
             [
                 'name' => 'Super Admin',
                 'password' => bcrypt($password),
-                // Opcional: Podrías asignarlo a algún tenant si quieres.
             ]
         );
-        $userSuperAdmin->assignRole($roleSuperAdmin);
-
-        /*
-         |--------------------------------------------------------------------------
-         | 5. Crear Otro Tenant "Beta Inc." y Usuarios
-         |--------------------------------------------------------------------------
-         */
-        $tenantB = Tenant::firstOrCreate(
-            ['name' => 'Beta Inc.'],
-            [
-                'domain' => 'beta.saas.local',
-                'plan' => 'free',
-            ]
-        );
-
-        // -- Usuario "User" en Beta
-        $betaUser = User::factory()->create([
-            'name' => 'Beta User',
-            'email' => 'beta_user@example.com',
-            'tenant_id' => $tenantB->id,
-        ]);
-        $betaUser->assignRole($roleUser);
-
-        // -- Usuario "Admin" en Beta
-        $betaAdmin = User::factory()->create([
-            'name' => 'Beta Admin',
-            'email' => 'beta_admin@example.com',
-            'tenant_id' => $tenantB->id,
-        ]);
-        $betaAdmin->assignRole($roleAdmin);
-
-        // Opcional: podrías crear más usuarios en Beta si lo deseas.
+        $userSuperAdmin->assignRole('Super-Admin');
     }
 }
