@@ -4,6 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Usercontroller;
 use App\Http\Controllers\TenantRegistrationController;
+use App\Http\Middleware\IdentifyTenant;
+use Illuminate\Http\Request;
+
 Route::group([
     //'middleware' => 'api',
     'prefix' => 'auth',
@@ -25,5 +28,30 @@ Route::group([
     Route::post('/assign-admin', [UserController::class, 'assignAdmin']);
 });
 
-Route::post('/tenant/register-user', [TenantRegistrationController::class, 'registerUserInTenant'])
-    ->name('tenant.register-user');
+
+
+Route::post('/register-tenant', [TenantRegistrationController::class, 'registerTenant']);
+
+// Rutas "tenant aware"
+Route::middleware([IdentifyTenant::class])->group(function () {
+    Route::get('/dashboard', function (Request $request) {
+        // Obtiene el tenant actual desde el contenedor
+        $tenant = app(\Spatie\Multitenancy\Contracts\IsTenant::class);
+        $host = $request->getHost();
+
+        if (!$tenant) {
+            return response()->json(['message' => 'No tenant identified', 'host' => $host], 404);
+        }
+
+        return response()->json([
+            'message' => 'Tenant identified',
+            'tenant' => [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'domain' => $tenant->domain,
+            ],
+            'host' => $host,
+        ]);
+    });
+});
+
