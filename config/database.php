@@ -30,7 +30,18 @@ return [
     */
 
     'connections' => [
-
+        'tenant' => [
+            'driver' => 'pgsql',
+            'host' => env('TENANT_DB_HOST', '127.0.0.1'),
+            'port' => env('TENANT_DB_PORT', '5432'),
+            'database' => '', // Se configurará dinámicamente
+            'username' => env('TENANT_DB_USERNAME', 'postgres'),
+            'password' => env('TENANT_DB_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'schema' => 'public',
+            'sslmode' => 'prefer',
+        ],
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
