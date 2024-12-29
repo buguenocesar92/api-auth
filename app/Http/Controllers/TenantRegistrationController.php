@@ -37,6 +37,7 @@ class TenantRegistrationController extends Controller
         // Podrías guardar tenant_id si usas single DB.
         // O si usas "database per tenant", en la migración de la base "landlord"
         // no es necesario. Depende de tu approach.
+        $user->tenant_id = $tenant->id; // o 'tenant_id' => $tenant->id,
         $user->save();
 
         $user->assignRole('Admin'); // Asegúrate de haber creado este rol
@@ -51,7 +52,8 @@ class TenantRegistrationController extends Controller
             'message' => 'Tenant registered successfully',
             'tenant'  => $tenant,
             'user'    => $user,
-            'token'   => $token,
+            'access_token'   => $token,
         ], 201);
+
     }
 }

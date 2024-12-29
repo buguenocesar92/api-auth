@@ -17,6 +17,7 @@ Route::group([
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout'); //->middleware('auth:api')
     Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');
     Route::post('/me', [AuthController::class, 'me'])->name('me');
+    Route::post('/register-tenant', [TenantRegistrationController::class, 'registerTenant']);
 });
 
 
@@ -30,7 +31,7 @@ Route::group([
 
 
 
-Route::post('/register-tenant', [TenantRegistrationController::class, 'registerTenant']);
+
 
 // Rutas "tenant aware"
 Route::middleware([IdentifyTenant::class])->group(function () {
