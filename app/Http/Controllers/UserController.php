@@ -18,7 +18,7 @@ class UserController extends Controller
         $user = User::findOrFail($request->user_id);
 
         // Asignar el rol "admin"
-        $user->assignRole('admin');
+        $user->assignRole('Admin');
 
         return response()->json([
             'message' => "User {$user->name} has been assigned the 'admin' role.",
