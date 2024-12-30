@@ -4,55 +4,37 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Usercontroller;
 use App\Http\Controllers\TenantRegistrationController;
-use App\Http\Middleware\IdentifyTenant;
-use Illuminate\Http\Request;
+use App\Http\Controllers\RolePermissionController;
 
 Route::group([
-    //'middleware' => 'api',
     'prefix' => 'auth',
-    //'middleware' => ['auth:api', 'role:Super-Admin'],
 ], function ($router) {
     Route::post('/register', [AuthController::class, 'register'])->name('register')->middleware('auth:api');
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth:api');
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');
     Route::post('/me', [AuthController::class, 'me'])->name('me');
-    Route::post('/register-tenant', [TenantRegistrationController::class, 'registerTenant']);
 });
-
-
-// routes/api.php (o donde manejes tus rutas)
 
 Route::group([
-    'middleware' => ['auth:api', 'role:Super-Admin'], // o 'role:admin' si admin puede crear otro admin
+    'prefix' => 'tenants',
 ], function () {
-    Route::post('/assign-admin', [UserController::class, 'assignAdmin']);
+    Route::post('/register', [TenantRegistrationController::class, 'registerTenant'])->name('tenants.register');
 });
 
+Route::group([
+    'prefix' => 'roles-permissions',
+    'middleware' => ['auth:api'], // Middleware global para todas las rutas del grupo
+], function () {
+    // Listar roles y permisos
+    Route::get('/roles', [RolePermissionController::class, 'listRoles'])->name('roles-permissions.list-roles');
+    Route::get('/permissions', [RolePermissionController::class, 'listPermissions'])->name('roles-permissions.list-permissions');
 
+    // Crear roles y permisos
+    Route::post('/roles', [RolePermissionController::class, 'createRole'])->name('roles-permissions.create-role');
+    Route::post('/permissions', [RolePermissionController::class, 'createPermission'])->name('roles-permissions.create-permission');
 
-
-
-// Rutas "tenant aware"
-Route::middleware([IdentifyTenant::class])->group(function () {
-    Route::get('/dashboard', function (Request $request) {
-        // Obtiene el tenant actual desde el contenedor
-        $tenant = app(\Spatie\Multitenancy\Contracts\IsTenant::class);
-        $host = $request->getHost();
-
-        if (!$tenant) {
-            return response()->json(['message' => 'No tenant identified', 'host' => $host], 404);
-        }
-
-        return response()->json([
-            'message' => 'Tenant identified',
-            'tenant' => [
-                'id' => $tenant->id,
-                'name' => $tenant->name,
-                'domain' => $tenant->domain,
-            ],
-            'host' => $host,
-        ]);
-    });
+    // Asignar roles y permisos
+    Route::post('/roles/assign-to-user', [RolePermissionController::class, 'assignRoleToUser'])->name('roles-permissions.assign-role-to-user');
+    Route::post('/permissions/assign-to-role', [RolePermissionController::class, 'assignPermissionToRole'])->name('roles-permissions.assign-permission-to-role');
 });
-
