@@ -30,16 +30,26 @@ return [
     */
 
     'connections' => [
+        'landlord' => [
+            'driver' => 'pgsql',
+            'database' => 'landlord_db',
+            'host' => '127.0.0.1',
+            'username' => 'postgres',
+            'password' => 12345678,
+            // And other options if needed ...
+        ],
         'tenant' => [
             'driver' => 'pgsql',
-            'host' => env('TENANT_DB_HOST', '127.0.0.1'),
-            'port' => env('TENANT_DB_PORT', '5432'),
-            'database' => '', // Se configurará dinámicamente
-            'username' => env('TENANT_DB_USERNAME', 'postgres'),
-            'password' => env('TENANT_DB_PASSWORD', ''),
-            'charset' => 'utf8',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
-            'schema' => 'public',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
             'sslmode' => 'prefer',
         ],
         'sqlite' => [
