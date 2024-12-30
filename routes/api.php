@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Usercontroller;
 use App\Http\Controllers\TenantRegistrationController;
 use App\Http\Controllers\RolePermissionController;
 
@@ -26,6 +25,7 @@ Route::group([
     'prefix' => 'roles-permissions',
     'middleware' => ['auth:api'], // Middleware global para todas las rutas del grupo
 ], function () {
+    Route::get('/roles-with-permissions', [RolePermissionController::class, 'listRolesWithPermissions'])->name('roles-permissions.list-roles-with-permissions');
     // Listar roles y permisos
     Route::get('/roles', [RolePermissionController::class, 'listRoles'])->name('roles-permissions.list-roles');
     Route::get('/permissions', [RolePermissionController::class, 'listPermissions'])->name('roles-permissions.list-permissions');
