@@ -49,4 +49,6 @@ Route::middleware(['auth:api', IdentifyTenant::class])->group(function () {
     Route::get('/dashboard', function () {
         return response()->json(['message' => 'Welcome to the tenant dashboard']);
     })->name('dashboard');
+
+    Route::post('/createRole', [RolePermissionController::class, 'createRole'])->name('createRole');
 });

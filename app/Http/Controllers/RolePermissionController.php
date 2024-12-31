@@ -24,8 +24,7 @@ class RolePermissionController extends Controller
      */
     public function createRole(Request $request)
     {
-        $tenant = app()->make('tenant');
-
+        $tenant = Auth::user()->tenant;
         $request->validate([
             'name' => 'required|string|unique:roles,name,NULL,id,tenant_id,' . $tenant->id,
             'permissions' => 'nullable|array',
