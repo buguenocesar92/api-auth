@@ -29,6 +29,7 @@ Route::middleware(['auth:api', IdentifyTenant::class])->group(function () {
     // Rutas para roles y permisos
     Route::group([
         'prefix' => 'roles-permissions',
+        'middleware' => ['role:Admin'],
     ], function () {
         // Listar roles y permisos
         Route::get('/roles-with-permissions', [RolePermissionController::class, 'listRolesWithPermissions'])->name('roles-permissions.list-roles-with-permissions');
