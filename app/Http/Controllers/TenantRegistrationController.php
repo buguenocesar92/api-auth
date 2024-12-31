@@ -14,19 +14,20 @@ class TenantRegistrationController extends Controller
     public function registerTenant(Request $request)
     {
         $request->validate([
-            'domain' => 'required|unique:tenants,domain',
-            'name' => 'required|unique:tenants,name',
-            // datos de usuario
-            'user_name' => 'required',
+            'name'      => 'required|alpha_dash|unique:tenants,domain',
+            // Datos de usuario
+            'user_name'  => 'required',
             'user_email' => 'required|email|unique:users,email',
-            'password' => 'required|confirmed|min:8',
+            'password'   => 'required|confirmed|min:8',
         ]);
+
+        // Generar el dominio como {subdominio}.saas.local
+        $domain = "{$request->name}.saas.local";
 
         // 1. Crear Tenant
         $tenant = Tenant::create([
             'name'   => $request->name,
-            'domain' => $request->domain,
-            // otros campos según config
+            'domain' => $domain, // Guardar el dominio generado
         ]);
 
         // 2. Crear usuario admin
@@ -34,10 +35,7 @@ class TenantRegistrationController extends Controller
         $user->name = $request->user_name;
         $user->email = $request->user_email;
         $user->password = Hash::make($request->password);
-        // Podrías guardar tenant_id si usas single DB.
-        // O si usas "database per tenant", en la migración de la base "landlord"
-        // no es necesario. Depende de tu approach.
-        $user->tenant_id = $tenant->id; // o 'tenant_id' => $tenant->id,
+        $user->tenant_id = $tenant->id;
         $user->save();
 
         $user->assignRole('Admin'); // Asegúrate de haber creado este rol
@@ -54,6 +52,5 @@ class TenantRegistrationController extends Controller
             'user'    => $user,
             'access_token'   => $token,
         ], 201);
-
     }
 }
