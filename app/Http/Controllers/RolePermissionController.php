@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
 class RolePermissionController extends Controller
 {
@@ -22,26 +24,72 @@ class RolePermissionController extends Controller
     /**
      * Crear un rol con permisos para el Tenant actual.
      */
-    public function createRole(Request $request)
-    {
-        $tenant = Auth::user()->tenant;
-        $request->validate([
-            'name' => 'required|string|unique:roles,name,NULL,id,tenant_id,' . $tenant->id,
-            'permissions' => 'nullable|array',
-            'permissions.*' => 'exists:permissions,name',
-        ]);
+     public function createRole(Request $request)
+     {
+         // Validar los datos del request
+         $validator = Validator::make($request->all(), [
+             'role_name' => 'required|string|max:255|unique:roles,name',
+             'permissions' => 'required|array',
+             'permissions.*' => 'string|max:255',
+             'users' => 'nullable|array',
+             'users.*' => 'exists:users,id',
+         ]);
 
-        $role = Role::create([
-            'name' => $request->name,
-            'tenant_id' => $tenant->id,
-        ]);
+         if ($validator->fails()) {
+             // Retornar errores de validación si fallan
+             return response()->json(['errors' => $validator->errors()], 400);
+         }
 
-        if ($request->has('permissions')) {
-            $role->givePermissionTo($request->permissions);
+         // Crear el rol
+         $role = Role::create(['name' => $request->role_name]);
+
+         // Crear los permisos si no existen y asignarlos al rol
+         foreach ($request->permissions as $permissionName) {
+             $permission = Permission::firstOrCreate(['name' => $permissionName]);
+             $role->givePermissionTo($permission);
+         }
+
+         // Asignar el rol a los usuarios seleccionados
+         if (!empty($request->users)) {
+             $users = User::whereIn('id', $request->users)->get();
+             foreach ($users as $user) {
+                 $user->assignRole($role);
+             }
+         }
+
+         // Respuesta exitosa
+         return response()->json([
+            'message' => 'Rol creado exitosamente',
+            'role' => [
+                'id' => $role->id,
+                'name' => $role->name,
+                'permissions' => $role->permissions // Devuelve los permisos asignados al rol
+            ],
+        ], 201);
+
+     }
+
+/*
+     public function createRole(Request $request)
+     {
+        $user = User::find(1); // Cambia el ID según corresponda
+
+        // Crear un rol
+        $role = Role::create(['name' => 'Test Role']);
+
+        // Crear permisos
+        $permissions = ['test_permission_1', 'test_permission_2'];
+        foreach ($permissions as $permissionName) {
+            Permission::firstOrCreate(['name' => $permissionName]);
         }
 
-        return response()->json(['message' => 'Role created successfully', 'role' => $role], 201);
-    }
+        // Asignar permisos al rol
+        $role->syncPermissions($permissions);
+
+        // Asignar el rol al usuario
+        $user->assignRole($role);
+
+     } */
 
     /**
      * Crear un permiso para el Tenant actual.
