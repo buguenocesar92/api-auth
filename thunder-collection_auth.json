@@ -1,0 +1,150 @@
+{
+    "clientName": "Thunder Client",
+    "collectionName": "auth",
+    "collectionId": "ae8017f2-24a0-4b1b-bc32-2360a112905e",
+    "dateExported": "2025-01-01T18:15:32.414Z",
+    "version": "1.2",
+    "folders": [],
+    "requests": [
+        {
+            "_id": "e93157ab-88b5-49cf-884b-34c69ce25061",
+            "colId": "ae8017f2-24a0-4b1b-bc32-2360a112905e",
+            "containerId": "",
+            "name": "http://127.0.0.1:8000/api/auth/register",
+            "url": "http://127.0.0.1:8000/api/auth/register",
+            "method": "POST",
+            "sortNum": 10000,
+            "created": "2024-12-24T20:30:15.760Z",
+            "modified": "2025-01-01T15:45:20.283Z",
+            "headers": [],
+            "body": {
+                "type": "formdata",
+                "raw": "",
+                "form": [
+                    {
+                        "name": "name",
+                        "value": "cesar"
+                    },
+                    {
+                        "name": "email",
+                        "value": "test@gmail.com"
+                    },
+                    {
+                        "name": "password",
+                        "value": "12345678"
+                    },
+                    {
+                        "name": "password_confirmation",
+                        "value": "12345678"
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "0552fef5-1172-4879-b6b8-2e02bf2f52f2",
+            "colId": "ae8017f2-24a0-4b1b-bc32-2360a112905e",
+            "containerId": "",
+            "name": "http://127.0.0.1:8000/api/auth/login",
+            "url": "http://127.0.0.1:8000/api/auth/login",
+            "method": "POST",
+            "sortNum": 20000,
+            "created": "2024-12-24T20:30:36.407Z",
+            "modified": "2025-01-01T15:53:11.727Z",
+            "headers": [],
+            "body": {
+                "type": "formdata",
+                "raw": "",
+                "form": [
+                    {
+                        "name": "email",
+                        "value": "admin@beta.com"
+                    },
+                    {
+                        "name": "password",
+                        "value": "admin123"
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "0bac2e55-bdbb-4a2b-b4ff-579eed363e0e",
+            "colId": "ae8017f2-24a0-4b1b-bc32-2360a112905e",
+            "containerId": "",
+            "name": "http://127.0.0.1:8000/api/auth/me",
+            "url": "http://127.0.0.1:8000/api/auth/me",
+            "method": "POST",
+            "sortNum": 30000,
+            "created": "2024-12-24T20:31:21.374Z",
+            "modified": "2024-12-31T15:10:11.828Z",
+            "headers": [],
+            "body": {
+                "type": "formdata",
+                "raw": "",
+                "form": [
+                    {
+                        "name": "email",
+                        "value": "test@gmail.com"
+                    },
+                    {
+                        "name": "password",
+                        "value": "12345678"
+                    }
+                ]
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3MzU2NTc3ODMsImV4cCI6MTczNTY2MTM4MywibmJmIjoxNzM1NjU3NzgzLCJqdGkiOiJ2em9RSUJHalB1TGxJdVQ2Iiwic3ViIjoiMTAiLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.Q_Mih72QR6JTZWOD0BwZRYhZosFBamIX-956AhmCZuc"
+            }
+        },
+        {
+            "_id": "69459919-dff3-43ee-8865-c0957885a2ef",
+            "colId": "ae8017f2-24a0-4b1b-bc32-2360a112905e",
+            "containerId": "",
+            "name": "http://127.0.0.1:8000/api/dashboard",
+            "url": "http://127.0.0.1:8000/api/dashboard",
+            "method": "GET",
+            "sortNum": 40000,
+            "created": "2024-12-31T15:10:18.404Z",
+            "modified": "2024-12-31T18:31:06.987Z",
+            "headers": [
+                {
+                    "name": "Host",
+                    "value": "test.saas.local",
+                    "isDisabled": true
+                }
+            ],
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3MzU2Njk4NTcsImV4cCI6MTczNTY3MzQ1NywibmJmIjoxNzM1NjY5ODU3LCJqdGkiOiJpS0cyb0NHRG5vbE93aGNkIiwic3ViIjoiMyIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.X2bwwzuchRakKFRZHTGwCgTOEMe2tPrfHy6eCf-NcOs"
+            }
+        },
+        {
+            "_id": "5d8ff1cd-a0c6-4314-9c8e-75eef9ba1151",
+            "colId": "ae8017f2-24a0-4b1b-bc32-2360a112905e",
+            "containerId": "",
+            "name": "http://127.0.0.1:8000/api/roles-permissions/roles",
+            "url": "http://127.0.0.1:8000/api/roles-permissions/roles",
+            "method": "POST",
+            "sortNum": 50000,
+            "created": "2024-12-31T19:41:13.125Z",
+            "modified": "2025-01-01T17:30:57.584Z",
+            "headers": [
+                {
+                    "name": "Host",
+                    "value": "test.saas.local",
+                    "isDisabled": true
+                }
+            ],
+            "body": {
+                "type": "json",
+                "raw": "{\r\n    \"role_name\": \"NuevoRol\",\r\n    \"permissions\": [\"permiso1\", \"permiso2\"],\r\n    \"users\": [4]\r\n}\r\n",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3MzU3NTA4MzUsImV4cCI6MTczNTc1NDQzNSwibmJmIjoxNzM1NzUwODM1LCJqdGkiOiJFRUc1WW93TE1SOEVEdFEwIiwic3ViIjoiMyIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.H0vbNr61QDefgur5Bwph2-9_cbuIj3tHnduVW4i8EOk"
+            }
+        }
+    ],
+    "ref": "okHA7gOpReZ5l8xWoi9FnChQBKSoZfehR6bQlpYBanMEZuVNCBUYiPjMUSPFevkNVjg_jjWUZizPju1JWZdc8g"
+}
