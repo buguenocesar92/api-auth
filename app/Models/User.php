@@ -50,24 +50,36 @@ class User extends Authenticatable implements JWTSubject
 /**
  * Obtener roles con permisos relacionados para el tenant del usuario.
  */
-    public function allRolesAndPermissionsForTenant()
-    {
-        return \Spatie\Permission\Models\Role::select('roles.*')
-            ->join('model_has_roles', 'roles.id', '=', 'model_has_roles.role_id')
-            ->join('users', 'model_has_roles.model_id', '=', 'users.id')
-            ->where('model_has_roles.model_type', get_class($this))
-            ->where('users.tenant_id', $this->tenant_id)
-            ->distinct() // Evitar duplicados
-            ->with('permissions') // Cargar permisos relacionados
-            ->get()
-            ->map(function ($role) {
+public function allRolesAndPermissionsForTenant()
+{
+    return \Spatie\Permission\Models\Role::select('roles.*')
+        ->join('model_has_roles', 'roles.id', '=', 'model_has_roles.role_id')
+        ->join('users', 'model_has_roles.model_id', '=', 'users.id')
+        ->where('model_has_roles.model_type', User::class) // Asegúrate de usar el modelo correcto
+        ->where('users.tenant_id', $this->tenant_id) // Filtrar por tenant_id
+        ->distinct() // Evitar duplicados
+        ->with(['permissions']) // Cargar permisos relacionados
+        ->get()
+        ->map(function ($role) {
+            // Filtrar usuarios directamente aquí
+            $users = $role->users->filter(function ($user) {
+                return $user->tenant_id === $this->tenant_id;
+            })->map(function ($user) {
                 return [
-                    'id' => $role->id,
-                    'name' => $role->name,
-                    'permissions' => $role->permissions->pluck('name'),
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
                 ];
             });
-    }
+
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'permissions' => $role->permissions->pluck('name'),
+                'users' => $users,
+            ];
+        });
+}
 
 
 }
