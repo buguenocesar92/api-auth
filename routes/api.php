@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TenantRegistrationController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Middleware\IdentifyTenant;
+use App\Http\Controllers\UserController;
 
 // Grupo de rutas para autenticación
 Route::group([
@@ -45,10 +46,16 @@ Route::middleware(['auth:api', IdentifyTenant::class])->group(function () {
         Route::post('/permissions/assign-to-role', [RolePermissionController::class, 'assignPermissionToRole'])->name('roles-permissions.assign-permission-to-role');
     });
 
+
+    Route::group([
+        'prefix' => 'users',
+        'middleware' => ['role:Admin'],
+    ], function () {
+        // Listar roles y permisos
+        Route::get('/list-users-by-tenant', [UserController::class, 'listUsersByTenant'])->name('users.list-users-by-tenant');
+    });
     // Rutas adicionales dentro del contexto del inquilino
     Route::get('/dashboard', function () {
         return response()->json(['message' => 'Welcome to the tenant dashboard']);
     })->name('dashboard');
-
-    Route::post('/createRole', [RolePermissionController::class, 'createRole'])->name('createRole');
 });
