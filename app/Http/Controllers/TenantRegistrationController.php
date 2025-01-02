@@ -30,7 +30,13 @@ class TenantRegistrationController extends Controller
             'domain' => $domain, // Guardar el dominio generado
         ]);
 
-        // 2. Crear usuario admin
+        // 2. Crear el rol "Admin" para el tenant
+        $adminRoleName = "Admin"; // Rol específico por tenant
+        $adminRole = \Spatie\Permission\Models\Role::firstOrCreate([
+            'name' => $adminRoleName,
+        ]);
+
+        // 3. Crear usuario admin
         $user = new User();
         $user->name = $request->user_name;
         $user->email = $request->user_email;
@@ -38,9 +44,10 @@ class TenantRegistrationController extends Controller
         $user->tenant_id = $tenant->id;
         $user->save();
 
-        $user->assignRole('Admin'); // Asegúrate de haber creado este rol
+        // Asignar el rol "Admin" al usuario
+        $user->assignRole($adminRoleName);
 
-        // 3. Loguear con JWT
+        // 4. Loguear con JWT
         if (! $token = JWTAuth::fromUser($user)) {
             return response()->json(['error' => 'Could not generate token'], 500);
         }
@@ -53,4 +60,5 @@ class TenantRegistrationController extends Controller
             'access_token'   => $token,
         ], 201);
     }
+
 }
