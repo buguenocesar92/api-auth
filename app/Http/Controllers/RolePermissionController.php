@@ -16,11 +16,8 @@ class RolePermissionController extends Controller
      */
     public function listRolesWithPermissions()
     {
-        // Retornar la respuesta en formato JSON
         return response()->json(Auth::user()->allRolesAndPermissionsForTenant());
     }
-
-
     /**
      * Crear un rol con permisos para el Tenant actual.
      */
@@ -68,95 +65,137 @@ class RolePermissionController extends Controller
         ], 201);
 
      }
-
-/*
-     public function createRole(Request $request)
-     {
-        $user = User::find(1); // Cambia el ID según corresponda
-
-        // Crear un rol
-        $role = Role::create(['name' => 'Test Role']);
-
-        // Crear permisos
-        $permissions = ['test_permission_1', 'test_permission_2'];
-        foreach ($permissions as $permissionName) {
-            Permission::firstOrCreate(['name' => $permissionName]);
-        }
-
-        // Asignar permisos al rol
-        $role->syncPermissions($permissions);
-
-        // Asignar el rol al usuario
-        $user->assignRole($role);
-
-     } */
-
-    /**
-     * Crear un permiso para el Tenant actual.
+     /**
+     * Eliminar un rol.
      */
-/*     public function createPermission(Request $request)
+    public function deleteRole($id)
     {
-        $tenant = app()->make('tenant');
+        $role = Role::find($id);
 
-        if ($tenant instanceof \Illuminate\Http\JsonResponse) {
-            return $tenant;
+        if (!$role) {
+            return response()->json(['message' => 'Rol no encontrado'], 404);
         }
 
-        $request->validate([
-            'name' => 'required|string|unique:permissions,name,NULL,id,tenant_id,' . $tenant->id,
-        ]);
+        // Si el rol está asignado a usuarios, verifica si deseas bloquear la eliminación
+        $usersWithRole = User::role($role->name)->count();
+        if ($usersWithRole > 0) {
+            return response()->json(['message' => 'No se puede eliminar un rol asignado a usuarios'], 400);
+        }
 
-        $permission = Permission::create([
-            'name' => $request->name,
-            'tenant_id' => $tenant->id,
-        ]);
+        // Eliminar el rol
+        $role->delete();
 
-        return response()->json(['message' => 'Permission created successfully', 'permission' => $permission], 201);
-    } */
+        return response()->json(['message' => 'Rol eliminado exitosamente'], 200);
+    }
 
     /**
-     * Asignar rol a un usuario dentro del Tenant actual.
+     * Actualizar un rol con sus permisos y usuarios.
      */
-/*     public function assignRoleToUser(Request $request)
+    public function updateRole(Request $request, $id)
     {
-        $tenant = $this->getCurrentTenant();
+        $role = Role::find($id);
 
-        if ($tenant instanceof \Illuminate\Http\JsonResponse) {
-            return $tenant;
+        if (!$role) {
+            return response()->json(['message' => 'Rol no encontrado'], 404);
         }
 
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'role' => 'required|exists:roles,name',
+        // Validar los datos del request
+        $validator = Validator::make($request->all(), [
+            'role_name' => 'required|string|max:255|unique:roles,name,' . $role->id,
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string|max:255',
+            'users' => 'nullable|array',
+            'users.*' => 'exists:users,id',
         ]);
 
-        $user = \App\Models\User::where('tenant_id', $tenant->id)->findOrFail($request->user_id);
-        $role = Role::where('tenant_id', $tenant->id)->where('name', $request->role)->firstOrFail();
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
 
-        $user->assignRole($role);
+        // Actualizar el nombre del rol
+        $role->name = $request->role_name;
+        $role->save();
 
-        return response()->json(['message' => "Role '{$role->name}' assigned to user '{$user->name}'"], 200);
-    } */
+        // Actualizar permisos
+        if (!empty($request->permissions)) {
+            $permissions = [];
+            foreach ($request->permissions as $permissionName) {
+                $permissions[] = Permission::firstOrCreate(['name' => $permissionName]);
+            }
+            $role->syncPermissions($permissions); // Sincronizar permisos
+        } else {
+            $role->permissions()->detach(); // Si no se envían permisos, elimina los existentes
+        }
 
+        // Actualizar usuarios asociados
+        if (!empty($request->users)) {
+            $users = User::whereIn('id', $request->users)->get();
+            foreach ($users as $user) {
+                $user->assignRole($role);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Rol actualizado exitosamente',
+            'role' => [
+                'id' => $role->id,
+                'name' => $role->name,
+                'permissions' => $role->permissions->pluck('name'), // Devuelve los permisos actualizados
+            ],
+        ], 200);
+    }
     /**
-     * Asignar permiso a un rol dentro del Tenant actual.
+     * Eliminar un usuario de un rol.
      */
-/*     public function assignPermissionToRole(Request $request)
-    $tenant = app()->make('tenant');
-        if ($tenant instanceof \Illuminate\Http\JsonResponse) {
-            return $tenant;
+    public function removeUserFromRole(Request $request, $roleId, $userId)
+    {
+        $role = Role::find($roleId);
+        $user = User::find($userId);
+
+        if (!$role || !$user) {
+            return response()->json(['message' => 'Rol o usuario no encontrado'], 404);
         }
 
-        $request->validate([
-            'role' => 'required|exists:roles,name',
-            'permission' => 'required|exists:permissions,name',
+        if (!$user->hasRole($role->name)) {
+            return response()->json(['message' => 'El usuario no tiene asignado este rol'], 400);
+        }
+
+        $user->removeRole($role);
+
+        return response()->json(['message' => 'Usuario eliminado del rol exitosamente'], 200);
+    }
+    /**
+     * Eliminar un permiso de un rol.
+     */
+    public function removePermissionFromRole(Request $request, $roleId)
+    {
+        // Buscar el rol por ID
+        $role = Role::find($roleId);
+
+        if (!$role) {
+            return response()->json(['message' => 'Rol no encontrado'], 404);
+        }
+
+        // Validar los datos del request
+        $validator = Validator::make($request->all(), [
+            'permission' => 'required|string|exists:permissions,name', // Validar que el permiso existe
         ]);
 
-        $role = Role::where('tenant_id', $tenant->id)->where('name', $request->role)->firstOrFail();
-        $permission = Permission::where('tenant_id', $tenant->id)->where('name', $request->permission)->firstOrFail();
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 400);
+        }
 
-        $role->givePermissionTo($permission);
+        // Buscar el permiso por nombre
+        $permission = Permission::where('name', $request->permission)->first();
 
-        return response()->json(['message' => "Permission '{$permission->name}' assigned to role '{$role->name}'"], 200);
-    } */
+        if (!$permission) {
+            return response()->json(['message' => 'Permiso no encontrado'], 404);
+        }
+
+        // Revocar el permiso del rol
+        $role->revokePermissionTo($permission);
+
+        return response()->json(['message' => 'Permiso eliminado del rol exitosamente'], 200);
+    }
+
 }
