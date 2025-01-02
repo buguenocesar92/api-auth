@@ -31,6 +31,7 @@ use App\Http\Controllers\UserController;
             'prefix' => 'roles-permissions',
             'middleware' => ['role:Admin'], // Middleware para restringir el acceso solo a roles de administrador
         ], function () {
+            Route::post('/roles', [RolePermissionController::class, 'createRole'])->name('roles-permissions.create-role');
             // Listar roles y permisos
             Route::get('/roles-with-permissions', [RolePermissionController::class, 'listRolesWithPermissions'])
                 ->name('roles-permissions.list-roles-with-permissions');
