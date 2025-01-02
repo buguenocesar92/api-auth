@@ -27,17 +27,24 @@ class AuthController extends Controller
             return response()->json($validator->errors()->toJson(), 400);
         }
 
+        // Crear usuario
         $user = new User;
         $user->name = request()->name;
         $user->email = request()->email;
         $user->password = bcrypt(request()->password);
-        $user->tenant_id = auth()->user()->tenant_id;
+        $user->tenant_id = auth()->user()->tenant_id; // Asociar al tenant actual
         $user->save();
 
-        $user->assignRole('User'); // Rol por defecto
+        // Crear un rol único para el usuario
+        $roleName = "User"; // Nombre único del rol
+        $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => $roleName]);
+
+        // Asignar el rol al usuario
+        $user->assignRole($roleName);
 
         return response()->json($user, 201);
     }
+
 
 
     /**
