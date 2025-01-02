@@ -29,19 +29,20 @@ class User extends Authenticatable implements JWTSubject
      */
     public function allRolesAndPermissionsForTenant()
     {
-        return \Spatie\Permission\Models\Role::select('roles.*')
-            ->join('model_has_roles', 'roles.id', '=', 'model_has_roles.role_id')
-            ->join('users', 'model_has_roles.model_id', '=', 'users.id')
-            ->where('model_has_roles.model_type', User::class) // Asegúrate de usar el modelo correcto
-            ->where('users.tenant_id', $this->tenant_id) // Filtrar por tenant_id
-            ->distinct() // Evitar duplicados
-            ->with(['permissions']) // Cargar permisos relacionados
-            ->get()
-            ->map(function ($role) {
-                // Filtrar usuarios directamente aquí
-                $users = $role->users->filter(function ($user) {
-                    return $user->tenant_id === $this->tenant_id;
-                })->map(function ($user) {
+        // Obtener todos los roles asociados a usuarios del tenant actual
+        $roles = \Spatie\Permission\Models\Role::whereHas('users', function ($query) {
+            $query->where('tenant_id', $this->tenant_id);
+        })
+        ->with(['permissions']) // Cargar permisos relacionados
+        ->get();
+
+        // Mapear los roles para incluir permisos y usuarios
+        return $roles->map(function ($role) {
+            // Obtener usuarios que pertenecen al rol y al tenant actual
+            $users = User::role($role->name)
+                ->where('tenant_id', $this->tenant_id)
+                ->get()
+                ->map(function ($user) {
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
@@ -49,12 +50,13 @@ class User extends Authenticatable implements JWTSubject
                     ];
                 });
 
-                return [
-                    'id' => $role->id,
-                    'name' => $role->name,
-                    'permissions' => $role->permissions->pluck('name'),
-                    'users' => $users,
-                ];
-            });
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'permissions' => $role->permissions->pluck('name'), // Lista de permisos
+                'users' => $users, // Lista de usuarios
+            ];
+        });
     }
+
 }
