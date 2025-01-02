@@ -29,14 +29,12 @@ class User extends Authenticatable implements JWTSubject
      */
     public function allRolesAndPermissionsForTenant()
     {
-        // Obtener todos los roles asociados a usuarios del tenant actual
-        $roles = \Spatie\Permission\Models\Role::whereHas('users', function ($query) {
-            $query->where('tenant_id', $this->tenant_id);
-        })
-        ->with(['permissions']) // Cargar permisos relacionados
-        ->get();
+        // Obtener todos los roles excluyendo el rol Admin
+        $roles = \Spatie\Permission\Models\Role::where('name', '!=', 'Admin')
+            ->with(['permissions'])
+            ->get();
 
-        // Mapear los roles para incluir permisos y usuarios
+        // Mapear los roles para incluir permisos y usuarios relacionados con el tenant
         return $roles->map(function ($role) {
             // Obtener usuarios que pertenecen al rol y al tenant actual
             $users = User::role($role->name)
@@ -50,13 +48,21 @@ class User extends Authenticatable implements JWTSubject
                     ];
                 });
 
+            // Si el rol no tiene usuarios asociados al tenant, devolver permisos vacíos
+            $permissions = $users->isEmpty() ? collect() : $role->permissions;
+
             return [
                 'id' => $role->id,
                 'name' => $role->name,
-                'permissions' => $role->permissions->pluck('name'), // Lista de permisos
+                'permissions' => $permissions->pluck('name'), // Lista de permisos
                 'users' => $users, // Lista de usuarios
             ];
+        })->filter(function ($role) {
+            // Si deseas excluir roles sin usuarios ni permisos, aplica este filtro
+            return $role['users']->isNotEmpty() || $role['permissions']->isNotEmpty();
         });
     }
+
+
 
 }
