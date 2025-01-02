@@ -160,10 +160,38 @@ class RolePermissionController extends Controller
             return response()->json(['message' => 'El usuario no tiene asignado este rol'], 400);
         }
 
+        // Eliminar el rol del usuario
         $user->removeRole($role);
+
+        // Verificar si el rol ya no tiene usuarios asignados
+        $usersWithRole = User::role($role->name)->count();
+        if ($usersWithRole === 0) {
+            // Obtener los permisos asociados al rol antes de eliminarlo
+            $permissions = $role->permissions;
+
+            // Desvincular los permisos del rol
+            $role->permissions()->detach();
+
+            // Eliminar el rol
+            $role->delete();
+
+            // Verificar y eliminar permisos huérfanos (no asociados a ningún rol)
+            foreach ($permissions as $permission) {
+                $rolesWithPermission = \Spatie\Permission\Models\Role::whereHas('permissions', function ($query) use ($permission) {
+                    $query->where('id', $permission->id);
+                })->exists();
+
+                if (!$rolesWithPermission) {
+                    $permission->delete();
+                }
+            }
+        }
 
         return response()->json(['message' => 'Usuario eliminado del rol exitosamente'], 200);
     }
+
+
+
     /**
      * Eliminar un permiso de un rol.
      */
