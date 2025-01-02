@@ -7,46 +7,52 @@ use App\Http\Controllers\RolePermissionController;
 use App\Http\Middleware\IdentifyTenant;
 use App\Http\Controllers\UserController;
 
-// Grupo de rutas para autenticación
-Route::group([
-    'prefix' => 'auth',
-], function () {
-    Route::post('/register', [AuthController::class, 'register'])->name('register')->middleware('auth:api');
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth:api');
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
-    Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');
-    Route::post('/me', [AuthController::class, 'me'])->name('me');
-});
-
-// Rutas públicas para registro de inquilinos
-Route::group([
-    'prefix' => 'tenants',
-], function () {
-    Route::post('/register', [TenantRegistrationController::class, 'registerTenant'])->name('tenants.register');
-});
-
-// Grupo de rutas protegidas con IdentifyTenant y autenticación
-Route::middleware(['auth:api', IdentifyTenant::class])->group(function () {
-    // Rutas para roles y permisos
+    // Rutas públicas para registro de inquilinos
     Route::group([
-        'prefix' => 'roles-permissions',
-        'middleware' => ['role:Admin'],
+        'prefix' => 'tenants',
     ], function () {
-        // Listar roles y permisos
-        Route::get('/roles-with-permissions', [RolePermissionController::class, 'listRolesWithPermissions'])->name('roles-permissions.list-roles-with-permissions');
-        Route::get('/roles', [RolePermissionController::class, 'listRoles'])->name('roles-permissions.list-roles');
-        Route::get('/permissions', [RolePermissionController::class, 'listPermissions'])->name('roles-permissions.list-permissions');
-
-        // Crear roles y permisos
-        Route::post('/roles', [RolePermissionController::class, 'createRole'])->name('roles-permissions.create-role');
-        Route::post('/permissions', [RolePermissionController::class, 'createPermission'])->name('roles-permissions.create-permission');
-
-        // Asignar roles y permisos
-        Route::post('/roles/assign-to-user', [RolePermissionController::class, 'assignRoleToUser'])->name('roles-permissions.assign-role-to-user');
-        Route::post('/permissions/assign-to-role', [RolePermissionController::class, 'assignPermissionToRole'])->name('roles-permissions.assign-permission-to-role');
+        Route::post('/register', [TenantRegistrationController::class, 'registerTenant'])->name('tenants.register');
     });
 
+    // Grupo de rutas para autenticación
+    Route::group([
+        'prefix' => 'auth',
+    ], function () {
+        Route::post('/register', [AuthController::class, 'register'])->name('register')->middleware('auth:api');
+        Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth:api');
+        Route::post('/login', [AuthController::class, 'login'])->name('login');
+        Route::post('/refresh', [AuthController::class, 'refresh'])->name('refresh');
+        Route::post('/me', [AuthController::class, 'me'])->name('me');
+    });
 
+    // Rutas para roles y permisos
+    Route::middleware(['auth:api', IdentifyTenant::class])->group(function () {
+        Route::group([
+            'prefix' => 'roles-permissions',
+            'middleware' => ['role:Admin'], // Middleware para restringir el acceso solo a roles de administrador
+        ], function () {
+            // Listar roles y permisos
+            Route::get('/roles-with-permissions', [RolePermissionController::class, 'listRolesWithPermissions'])
+                ->name('roles-permissions.list-roles-with-permissions');
+
+            // Eliminar un rol
+            Route::delete('/roles/{id}', [RolePermissionController::class, 'deleteRole'])
+                ->name('roles-permissions.delete-role');
+
+            // Actualizar un rol
+            Route::put('/roles/{id}', [RolePermissionController::class, 'updateRole'])
+                ->name('roles-permissions.update-role');
+
+            // Eliminar un usuario de un rol
+            Route::delete('/roles/{roleId}/users/{userId}', [RolePermissionController::class, 'removeUserFromRole'])
+                ->name('roles-permissions.remove-user-from-role');
+
+            Route::delete('/roles/{roleId}/permissions', [RolePermissionController::class, 'removePermissionFromRole'])
+                ->name('roles-permissions.remove-permission');
+
+    });
+
+    // Rutas adicionales dentro del contexto del inquilino
     Route::group([
         'prefix' => 'users',
         'middleware' => ['role:Admin'],
