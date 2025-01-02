@@ -25,61 +25,36 @@ class User extends Authenticatable implements JWTSubject
     }
 
     /**
-     * Roles relacionados con el tenant del usuario.
+     * Obtener roles con permisos relacionados para el tenant del usuario.
      */
-    public function rolesForTenant()
+    public function allRolesAndPermissionsForTenant()
     {
-        return $this->roles()->whereHas('users', function ($query) {
-            $query->where('tenant_id', $this->tenant_id);
-        });
-    }
+        return \Spatie\Permission\Models\Role::select('roles.*')
+            ->join('model_has_roles', 'roles.id', '=', 'model_has_roles.role_id')
+            ->join('users', 'model_has_roles.model_id', '=', 'users.id')
+            ->where('model_has_roles.model_type', User::class) // Asegúrate de usar el modelo correcto
+            ->where('users.tenant_id', $this->tenant_id) // Filtrar por tenant_id
+            ->distinct() // Evitar duplicados
+            ->with(['permissions']) // Cargar permisos relacionados
+            ->get()
+            ->map(function ($role) {
+                // Filtrar usuarios directamente aquí
+                $users = $role->users->filter(function ($user) {
+                    return $user->tenant_id === $this->tenant_id;
+                })->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ];
+                });
 
-    /**
-     * Permisos relacionados con el tenant del usuario.
-     */
-    public function permissionsForTenant()
-    {
-        return $this->permissions()->whereHas('roles', function ($query) {
-            $query->whereHas('users', function ($subQuery) {
-                $subQuery->where('tenant_id', $this->tenant_id);
-            });
-        });
-    }
-
-
-/**
- * Obtener roles con permisos relacionados para el tenant del usuario.
- */
-public function allRolesAndPermissionsForTenant()
-{
-    return \Spatie\Permission\Models\Role::select('roles.*')
-        ->join('model_has_roles', 'roles.id', '=', 'model_has_roles.role_id')
-        ->join('users', 'model_has_roles.model_id', '=', 'users.id')
-        ->where('model_has_roles.model_type', User::class) // Asegúrate de usar el modelo correcto
-        ->where('users.tenant_id', $this->tenant_id) // Filtrar por tenant_id
-        ->distinct() // Evitar duplicados
-        ->with(['permissions']) // Cargar permisos relacionados
-        ->get()
-        ->map(function ($role) {
-            // Filtrar usuarios directamente aquí
-            $users = $role->users->filter(function ($user) {
-                return $user->tenant_id === $this->tenant_id;
-            })->map(function ($user) {
                 return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'permissions' => $role->permissions->pluck('name'),
+                    'users' => $users,
                 ];
             });
-
-            return [
-                'id' => $role->id,
-                'name' => $role->name,
-                'permissions' => $role->permissions->pluck('name'),
-                'users' => $users,
-            ];
-        });
-}
-
-
+    }
 }
