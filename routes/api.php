@@ -6,6 +6,7 @@ use App\Http\Controllers\TenantRegistrationController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Middleware\IdentifyTenant;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\RoutesController;
 
     // Rutas públicas para registro de inquilinos
     Route::group([
@@ -65,4 +66,11 @@ use App\Http\Controllers\UserController;
     Route::get('/dashboard', function () {
         return response()->json(['message' => 'Welcome to the tenant dashboard']);
     })->name('dashboard');
+
+     // Rutas dinámicas basadas en permisos
+    Route::group([
+        'prefix' => 'routes-permissions',
+    ], function () {
+        Route::get('/', [RoutesController::class, 'getAccessibleRoutes'])->name('routes-permissions.get-accessible-routes');
+    });
 });
