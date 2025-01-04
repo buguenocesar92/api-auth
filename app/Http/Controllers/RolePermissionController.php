@@ -25,7 +25,7 @@ class RolePermissionController extends Controller
      {
          // Validar los datos del request
          $validator = Validator::make($request->all(), [
-             'role_name' => 'required|string|max:255|unique:roles,name',
+             'role_name' => 'required|string|max:255,name',
              'permissions' => 'required|array',
              'permissions.*' => 'string|max:255',
              'users' => 'nullable|array',
@@ -38,7 +38,7 @@ class RolePermissionController extends Controller
          }
 
          // Crear el rol
-         $role = Role::create(['name' => $request->role_name]);
+         $role = Role::firstOrCreate(['name' => $request->role_name]);
 
          // Crear los permisos si no existen y asignarlos al rol
          foreach ($request->permissions as $permissionName) {

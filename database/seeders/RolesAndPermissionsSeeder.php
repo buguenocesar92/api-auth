@@ -96,14 +96,14 @@ class RolesAndPermissionsSeeder extends Seeder
         );
 
         // Establecer el tenant actual
-        $tenant->makeCurrent();
+/*         $tenant->makeCurrent();
 
         // Verifica que el tenant se registró correctamente
         if (!app()->bound(\Spatie\Multitenancy\Contracts\IsTenant::class)) {
             $this->command->error("Failed to bind tenant {$tenant->name} to the container.");
             $tenant->forgetCurrent();
             return;
-        }
+        } */
 
 
         //dd($tenant->id);
@@ -140,7 +140,7 @@ class RolesAndPermissionsSeeder extends Seeder
         //dd($normalUser);
 
         // Olvidar el tenant actual
-        $tenant->forgetCurrent();
+      /*   $tenant->forgetCurrent(); */
 
     }
 
